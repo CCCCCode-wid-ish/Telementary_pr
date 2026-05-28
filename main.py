@@ -6,13 +6,9 @@ import datetime
 
 app = Flask('')
 
-@app.route('/')
-def home():
-    return "Telementary Project is Live!"
+# --- Data Loading and Processing Logic ---
 
-# --- Your Data Conversion Logic ---
-
-# use the open function to open read the three json files
+# Use the open function to read the three json files
 with open("./data-1.json", "r", encoding="utf-8") as f:
     jsonData1 = json.load(f)
 
@@ -23,7 +19,7 @@ with open("./data-result.json", "r", encoding="utf-8") as f:
     jsonExpectedResult = json.load(f)
 
 
-# convert json data from format 1 to the expected format
+# Convert json data from format 1 to the expected format
 def convertFromFormat1(jsonObject):
     locationParts = jsonObject["location"].split("/")
     result = {
@@ -45,7 +41,7 @@ def convertFromFormat1(jsonObject):
     return result
 
 
-# convert json data from format 2 to the expected format
+# Convert json data from format 2 to the expected format
 def convertFromFormat2(jsonObject):
     data = datetime.datetime.strptime(
         jsonObject['timestamp'],
@@ -77,7 +73,22 @@ def main(jsonObject):
         return convertFromFormat2(jsonObject)
 
 
-# Test cases using unittest module
+# --- Upgraded Web Route Definition ---
+# Placed here so it can cleanly read jsonData1 and invoke main()
+@app.route('/')
+def home():
+    try:
+        sample_output = main(jsonData1)
+        return {
+            "status": "Telementary Project is Live!",
+            "test_environment": "Railway Cloud",
+            "sample_converted_data": sample_output
+        }
+    except Exception as e:
+        return f"Server is live, but data processing encountered an error: {str(e)}"
+
+
+# --- Unit Test Assertions ---
 class TestSolution(unittest.TestCase):
     def test_sanity(self):
         result = json.loads(json.dumps(jsonExpectedResult))
@@ -92,16 +103,16 @@ class TestSolution(unittest.TestCase):
         self.assertEqual(result, jsonExpectedResult, "Converting from Type 2 failed")
 
 
-# --- Fixed Execution Blocks ---
+# --- Production Execution Entrypoint ---
 if __name__ == '__main__':
     print("Running telemetry data format tests...")
     
-    # 1. Run the test suite programmatically without shutting down the script
+    # 1. Run the test suite programmatically inside the logs
     suite = unittest.TestLoader().loadTestsFromTestCase(TestSolution)
     runner = unittest.TextTestRunner()
     test_result = runner.run(suite)
     
-    # 2. Start the Flask server on the main thread so Railway stays active
-    print("Tests finished. Starting production web server listener...")
+    # 2. Spin up the server loop on the primary thread
+    print("Tests completed. Starting web app deployment...")
     port = int(os.environ.get("PORT", 8080))
     app.run(host='0.0.0.0', port=port)
