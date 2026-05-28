@@ -1,6 +1,8 @@
 from flask import Flask
-import threading
 import os
+import json
+import unittest
+import datetime
 
 app = Flask('')
 
@@ -8,17 +10,7 @@ app = Flask('')
 def home():
     return "Telementary Project is Live!"
 
-def run_server():
-    # Railway passes an automatic PORT variable; we fallback to 8080 if locally testing
-    port = int(os.environ.get("PORT", 8080))
-    app.run(host='0.0.0.0', port=port)
-
-# Starts the web server on a background thread so your main script continues to run normally
-threading.Thread(target=run_server, daemon=True).start()
-
-
-# import the necessary modules and libraries
-import json, unittest, datetime
+# --- Your Data Conversion Logic ---
 
 # use the open function to open read the three json files
 with open("./data-1.json", "r", encoding="utf-8") as f:
@@ -33,9 +25,7 @@ with open("./data-result.json", "r", encoding="utf-8") as f:
 
 # convert json data from format 1 to the expected format
 def convertFromFormat1(jsonObject):
-
     locationParts = jsonObject["location"].split("/")
-
     result = {
         'deviceID': jsonObject['deviceID'],
         'deviceType': jsonObject['deviceType'],
@@ -52,22 +42,18 @@ def convertFromFormat1(jsonObject):
             'temperature': jsonObject['temp']
         }
     }
-
     return result
 
 
 # convert json data from format 2 to the expected format
 def convertFromFormat2(jsonObject):
-
     data = datetime.datetime.strptime(
         jsonObject['timestamp'],
         '%Y-%m-%dT%H:%M:%S.%fZ'
     )
-
     timestamp = round(
         (data - datetime.datetime(1970, 1, 1)).total_seconds() * 1000
     )
-
     result = {
         'deviceID': jsonObject['device']['id'],
         'deviceType': jsonObject['device']['type'],
@@ -81,12 +67,10 @@ def convertFromFormat2(jsonObject):
         },
         'data': jsonObject['data']
     }
-
     return result
 
 
 def main(jsonObject):
-
     if jsonObject.get('device') is None:
         return convertFromFormat1(jsonObject)
     else:
@@ -95,7 +79,6 @@ def main(jsonObject):
 
 # Test cases using unittest module
 class TestSolution(unittest.TestCase):
-
     def test_sanity(self):
         result = json.loads(json.dumps(jsonExpectedResult))
         self.assertEqual(result, jsonExpectedResult)
@@ -109,5 +92,16 @@ class TestSolution(unittest.TestCase):
         self.assertEqual(result, jsonExpectedResult, "Converting from Type 2 failed")
 
 
+# --- Fixed Execution Blocks ---
 if __name__ == '__main__':
-    unittest.main()
+    print("Running telemetry data format tests...")
+    
+    # 1. Run the test suite programmatically without shutting down the script
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestSolution)
+    runner = unittest.TextTestRunner()
+    test_result = runner.run(suite)
+    
+    # 2. Start the Flask server on the main thread so Railway stays active
+    print("Tests finished. Starting production web server listener...")
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host='0.0.0.0', port=port)
