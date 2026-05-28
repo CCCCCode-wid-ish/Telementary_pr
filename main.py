@@ -1,3 +1,22 @@
+from flask import Flask
+import threading
+import os
+
+app = Flask('')
+
+@app.route('/')
+def home():
+    return "Telementary Project is Live!"
+
+def run_server():
+    # Railway passes an automatic PORT variable; we fallback to 8080 if locally testing
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host='0.0.0.0', port=port)
+
+# Starts the web server on a background thread so your main script continues to run normally
+threading.Thread(target=run_server, daemon=True).start()
+
+
 # import the necessary modules and libraries
 import json, unittest, datetime
 
